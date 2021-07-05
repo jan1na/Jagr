@@ -29,14 +29,18 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 import org.slf4j.Logger
+import spoon.Launcher
+import spoon.support.compiler.VirtualFile
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.jar.JarFile
 import javax.tools.Diagnostic
 import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
 import javax.tools.ToolProvider
+import kotlin.math.max
 
 class RuntimeJarLoader @Inject constructor(
   private val logger: Logger,
@@ -64,6 +68,8 @@ class RuntimeJarLoader @Inject constructor(
     val jarFile = JarFile(file)
     val sourceFiles: MutableMap<String, JavaSourceFile> = mutableMapOf()
     var submissionInfo: SubmissionInfoImpl? = null
+    val sourceElementCounter = AtomicInteger()
+    val loopProcessor = LoopProcessor(sourceElementCounter)
     for (entry in jarFile.entries()) {
       when {
         entry.isDirectory -> continue
@@ -78,7 +84,42 @@ class RuntimeJarLoader @Inject constructor(
         entry.name.endsWith(".java") -> {
           val className = entry.name.replace('/', '.').substring(0, entry.name.length - 5)
           val content = jarFile.getInputStream(entry).use { it.readEncoded() }
-          val sourceFile = JavaSourceFile(className, entry.name, content)
+
+          // Instrumentation
+          val virtualFile = VirtualFile(content)
+          val launcher = Launcher()
+          launcher.addInputResource(virtualFile)
+          launcher.addProcessor(loopProcessor)
+          launcher.buildModel()
+          launcher.process()
+          val cu = launcher.factory.CompilationUnit().map.values.first()
+          val printer = launcher.environment.createPrettyPrinterAutoImport()
+          val transformedContent = printer.printCompilationUnit(cu)
+
+          // Fixup line numbers
+          val lines = ArrayList(transformedContent.split(System.lineSeparator()).map { StringBuilder(it) })
+          val lineMapping = printer.lineNumberMapping.entries
+            .filter { it.value > 0 }.map { Pair(it.key - 1, it.value - 1) }.sortedBy { it.first }
+          var diff = 0
+          for ((transformedLine, originalLine) in lineMapping) {
+            for (i in 0 until (originalLine - transformedLine - diff)) {
+              lines.add(transformedLine + diff, StringBuilder())
+            }
+            diff += max(0, originalLine - transformedLine - diff)
+
+            for (i in 0 until (transformedLine + diff - originalLine)) {
+              lines[transformedLine + diff - 1].append(' ').append(lines[transformedLine + diff])
+              lines.removeAt(transformedLine + diff)
+            }
+            diff -= max(0, transformedLine + diff - originalLine)
+          }
+          val temp = StringBuilder()
+          for (line in lines) {
+            temp.append(line)
+          }
+          val fixedTransformedContent = temp.toString()
+
+          val sourceFile = JavaSourceFile(className, entry.name, fixedTransformedContent)
           sourceFiles[entry.name] = sourceFile
         }
         entry.name.endsWith("MANIFEST.MF") -> { // ignore
