@@ -17,24 +17,11 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jagrkt.common.transformer
+package org.jagrkt.common.testing
 
-import com.google.inject.Inject
-import org.jagrkt.common.compiler.java.CompiledClass
-import org.jagrkt.common.compiler.java.RuntimeJarLoader
+import kotlinx.serialization.Serializable
 
-class TransformerManager @Inject constructor(
-  private val commonTransformer: CommonTransformer,
-) {
-
-  private fun MutableMap<String, CompiledClass>.transform(): MutableMap<String, CompiledClass> {
-    for ((className, compiledClass) in this) {
-      this[className] = CompiledClass.Existing(className, commonTransformer.transform(compiledClass.byteArray))
-    }
-    return this
-  }
-
-  fun transform(result: RuntimeJarLoader.CompileJarResult): RuntimeJarLoader.CompileJarResult {
-    return result.copyWith(compiledClasses = result.compiledClasses.toMutableMap().transform())
-  }
-}
+@Serializable
+data class TestMeta(
+  val testClasses: List<String>,
+)
