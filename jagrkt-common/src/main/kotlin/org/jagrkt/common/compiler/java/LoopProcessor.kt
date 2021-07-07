@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class LoopProcessor(private val counter: AtomicInteger) : AbstractProcessor<CtLoop>() {
 
   override fun process(element: CtLoop?) {
-    val codeTemplate = "org.jagrkt.common.testing.ExecutionContextStackResolver.INSTANCE.getValue().pushElement(%d)"
-    val stmt = factory.createCodeSnippetStatement(String.format(codeTemplate, counter.incrementAndGet()))
+    val codeTemplate = "org.jagrkt.common.executor.LoopHandler.willEnterLoop()"
+    val stmt = factory.createCodeSnippetStatement(codeTemplate)
     element!!.insertBefore<CtCodeSnippetStatement>(stmt)
   }
 }

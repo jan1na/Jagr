@@ -31,6 +31,7 @@ import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 import org.slf4j.Logger
 import spoon.Launcher
+import spoon.reflect.visitor.ForceFullyQualifiedProcessor
 import spoon.support.compiler.VirtualFile
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -41,6 +42,7 @@ import javax.tools.Diagnostic
 import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
 import javax.tools.ToolProvider
+import javax.xml.stream.events.Comment
 import kotlin.math.max
 
 class RuntimeJarLoader @Inject constructor(
@@ -70,6 +72,7 @@ class RuntimeJarLoader @Inject constructor(
     val sourceFiles: MutableMap<String, JavaSourceFile> = mutableMapOf()
     var submissionInfo: SubmissionInfoImpl? = null
     val sourceElementCounter = AtomicInteger()
+    val commentProcessor = CommentProcessor()
     val loopProcessor = LoopProcessor(sourceElementCounter)
     var testMeta: TestMeta? = null
     for (entry in jarFile.entries()) {
@@ -98,13 +101,18 @@ class RuntimeJarLoader @Inject constructor(
           // Instrumentation
           val virtualFile = VirtualFile(content)
           val launcher = Launcher()
+          launcher.environment.complianceLevel = 15
           launcher.addInputResource(virtualFile)
+          launcher.addProcessor(commentProcessor)
           launcher.addProcessor(loopProcessor)
+          launcher.addProcessor(ForceFullyQualifiedProcessor())
           launcher.buildModel()
           launcher.process()
           val cu = launcher.factory.CompilationUnit().map.values.first()
-          val printer = launcher.environment.createPrettyPrinterAutoImport()
+          val printer = launcher.environment.createPrettyPrinter()
           val transformedContent = printer.printCompilationUnit(cu)
+
+/*
 
           // Fixup line numbers
           val lines = ArrayList(transformedContent.split(System.lineSeparator()).map { StringBuilder(it) })
@@ -128,8 +136,9 @@ class RuntimeJarLoader @Inject constructor(
             temp.append(line)
           }
           val fixedTransformedContent = temp.toString()
-
-          val sourceFile = JavaSourceFile(className, entry.name, fixedTransformedContent)
+*/
+          logger.warn(transformedContent)
+          val sourceFile = JavaSourceFile(className, entry.name, transformedContent)
           sourceFiles[entry.name] = sourceFile
         }
         entry.name.endsWith("MANIFEST.MF") -> { // ignore
