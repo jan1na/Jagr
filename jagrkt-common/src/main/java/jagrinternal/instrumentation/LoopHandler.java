@@ -1,9 +1,10 @@
-package org.jagrkt.common.executor;
+package jagrinternal.instrumentation;
 
 import org.opentest4j.AssertionFailedError;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("unused")
 public class LoopHandler {
   public static final ThreadLocal<AtomicBoolean> NO_LOOPS_MODE = ThreadLocal.withInitial(AtomicBoolean::new);
 

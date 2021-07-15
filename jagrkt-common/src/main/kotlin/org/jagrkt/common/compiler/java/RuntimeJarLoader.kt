@@ -23,6 +23,7 @@ import com.google.inject.Inject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.jagrkt.api.testing.CompileResult
+import org.jagrkt.common.compiler.java.handles.SourceHandle
 import org.jagrkt.common.compiler.readEncoded
 import org.jagrkt.common.testing.SubmissionInfoImpl
 import org.jagrkt.common.testing.TestMeta
@@ -31,19 +32,18 @@ import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 import org.slf4j.Logger
 import spoon.Launcher
-import spoon.reflect.visitor.ForceFullyQualifiedProcessor
 import spoon.support.compiler.VirtualFile
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicInteger
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
 import java.util.jar.JarFile
 import javax.tools.Diagnostic
 import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
 import javax.tools.ToolProvider
-import javax.xml.stream.events.Comment
-import kotlin.math.max
+import kotlin.collections.ArrayList
 
 class RuntimeJarLoader @Inject constructor(
   private val logger: Logger,
@@ -57,7 +57,8 @@ class RuntimeJarLoader @Inject constructor(
         entry.isDirectory -> continue
         entry.name.endsWith(".class") -> {
           val className = entry.name.replace('/', '.').substring(0, entry.name.length - 6)
-          classStorage[className] = CompiledClass.Existing(className, jarFile.getInputStream(entry).use { it.readBytes() })
+          classStorage[className] =
+            CompiledClass.Existing(className, jarFile.getInputStream(entry).use { it.readBytes() })
         }
         entry.name.endsWith("MANIFEST.MF") -> { // ignore
         }
@@ -68,19 +69,26 @@ class RuntimeJarLoader @Inject constructor(
   }
 
   fun loadSourcesJar(file: File, runtimeClassPath: Map<String, CompiledClass> = mapOf()): CompileJarResult {
-    val jarFile = JarFile(file)
+    val jarFile = try {
+      JarFile(file)
+    } catch (e: Exception) {
+      return CompileJarResult(file)
+    }
+    if (file.nameWithoutExtension == "." || file.nameWithoutExtension == "..") {
+      // Never let the students escape
+      return CompileJarResult(file)
+    }
     val sourceFiles: MutableMap<String, JavaSourceFile> = mutableMapOf()
     var submissionInfo: SubmissionInfoImpl? = null
-    val sourceElementCounter = AtomicInteger()
-    val commentProcessor = CommentProcessor()
-    val loopProcessor = LoopProcessor(sourceElementCounter)
     var testMeta: TestMeta? = null
+    val instrumentationDir = Path.of("instrumentation", file.nameWithoutExtension)
     for (entry in jarFile.entries()) {
       when {
         entry.isDirectory -> continue
         entry.name == "meta-meta.json" -> {
           testMeta = try {
-            Json.decodeFromString<TestMeta>(jarFile.getInputStream(entry).bufferedReader().use { it.readText() })
+            Json { ignoreUnknownKeys = true }.decodeFromString<TestMeta>(
+              jarFile.getInputStream(entry).bufferedReader().use { it.readText() })
           } catch (e: Exception) {
             logger.error("$file has invalid meta-meta.json", e)
             return CompileJarResult(file)
@@ -88,7 +96,8 @@ class RuntimeJarLoader @Inject constructor(
         }
         entry.name == "submission-info.json" -> {
           submissionInfo = try {
-            Json.decodeFromString<SubmissionInfoImpl>(jarFile.getInputStream(entry).bufferedReader().use { it.readText() })
+            Json { ignoreUnknownKeys = true }.decodeFromString<SubmissionInfoImpl>(
+              jarFile.getInputStream(entry).bufferedReader().use { it.readText() })
           } catch (e: Throwable) {
             logger.error("$file has invalid submission-info.json", e)
             return CompileJarResult(file)
@@ -99,46 +108,26 @@ class RuntimeJarLoader @Inject constructor(
           val content = jarFile.getInputStream(entry).use { it.readEncoded() }
 
           // Instrumentation
-          val virtualFile = VirtualFile(content)
-          val launcher = Launcher()
-          launcher.environment.complianceLevel = 15
-          launcher.addInputResource(virtualFile)
-          launcher.addProcessor(commentProcessor)
-          launcher.addProcessor(loopProcessor)
-          launcher.addProcessor(ForceFullyQualifiedProcessor())
-          launcher.buildModel()
-          launcher.process()
-          val cu = launcher.factory.CompilationUnit().map.values.first()
-          val printer = launcher.environment.createPrettyPrinter()
-          val transformedContent = printer.printCompilationUnit(cu)
-
-/*
-
-          // Fixup line numbers
-          val lines = ArrayList(transformedContent.split(System.lineSeparator()).map { StringBuilder(it) })
-          val lineMapping = printer.lineNumberMapping.entries
-            .filter { it.value > 0 }.map { Pair(it.key - 1, it.value - 1) }.sortedBy { it.first }
-          var diff = 0
-          for ((transformedLine, originalLine) in lineMapping) {
-            for (i in 0 until (originalLine - transformedLine - diff)) {
-              lines.add(transformedLine + diff, StringBuilder())
-            }
-            diff += max(0, originalLine - transformedLine - diff)
-
-            for (i in 0 until (transformedLine + diff - originalLine)) {
-              lines[transformedLine + diff - 1].append(' ').append(lines[transformedLine + diff])
-              lines.removeAt(transformedLine + diff)
-            }
-            diff -= max(0, transformedLine + diff - originalLine)
+          val sourceHandles = ArrayList<SourceHandle>()
+          Launcher().let {
+            it.environment.complianceLevel = 15
+            it.addInputResource(VirtualFile(content))
+            it.addProcessor(LoopProcessor(sourceHandles))
+            it.buildModel()
+            it.process()
           }
-          val temp = StringBuilder()
-          for (line in lines) {
-            temp.append(line)
+          sourceHandles.sortByDescending { it.position }
+          val sb = StringBuilder(content)
+          for (sourceHandle in sourceHandles) {
+            sourceHandle.process(sb)
           }
-          val fixedTransformedContent = temp.toString()
-*/
-          logger.warn(transformedContent)
+          val transformedContent = sb.toString()
+          logger.info(transformedContent)
+
           val sourceFile = JavaSourceFile(className, entry.name, transformedContent)
+          val instrumentedCodeFile = instrumentationDir.resolve(entry.name)
+          instrumentedCodeFile.parent?.let { Files.createDirectories(it) }
+          Files.writeString(instrumentedCodeFile, transformedContent)
           sourceFiles[entry.name] = sourceFile
         }
         entry.name.endsWith("MANIFEST.MF") -> { // ignore

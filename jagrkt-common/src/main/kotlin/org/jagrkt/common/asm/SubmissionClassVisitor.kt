@@ -53,19 +53,14 @@ private class SubmissionMethodVisitor(
   private val callerMethod: String,
   private val callerDescriptor: String
 ) : MethodVisitor(Opcodes.ASM9) {
-  override fun visitInvokeDynamicInsn(
-    name: String,
-    descriptor: String,
-    bootstrapMethodHandle: Handle,
-    vararg bootstrapMethodArguments: Any?
-  ) {
-    println("Dynamic $name$descriptor, ${with(bootstrapMethodHandle) { "$owner.${this@with.name}$desc" }}$bootstrapMethodArguments")
-    verify(callerClass, callerMethod, callerDescriptor, bootstrapMethodHandle.owner, name, descriptor)
-  }
-
   override fun visitMethodInsn(opcode: Int, owner: String, name: String, descriptor: String, isInterface: Boolean) {
-    println("Normal $owner.$name$descriptor")
-    verify(callerClass, callerMethod, callerDescriptor, owner, name, descriptor)
+    // println("Normal $owner.$name$descriptor")
+    // verify(callerClass, callerMethod, callerDescriptor, owner, name, descriptor)
+
+    if (owner == "java/lang/System" && name == "exit") {
+      println("System.exit DETECTED!")
+      throw BytecodeSecurityException("System.exit DETECTED!!!!1111elf")
+    }
   }
 }
 

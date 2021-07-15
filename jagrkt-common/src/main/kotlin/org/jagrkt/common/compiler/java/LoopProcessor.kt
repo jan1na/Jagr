@@ -1,15 +1,17 @@
 package org.jagrkt.common.compiler.java
 
+import org.jagrkt.common.compiler.java.handles.LoopEndHandle
+import org.jagrkt.common.compiler.java.handles.LoopStartHandle
+import org.jagrkt.common.compiler.java.handles.SourceHandle
 import spoon.processing.AbstractProcessor
-import spoon.reflect.code.CtCodeSnippetStatement
 import spoon.reflect.code.CtLoop
-import java.util.concurrent.atomic.AtomicInteger
 
-class LoopProcessor(private val counter: AtomicInteger) : AbstractProcessor<CtLoop>() {
+class LoopProcessor(private val handles: MutableCollection<SourceHandle>) : AbstractProcessor<CtLoop>() {
 
   override fun process(element: CtLoop?) {
-    val codeTemplate = "org.jagrkt.common.executor.LoopHandler.willEnterLoop()"
-    val stmt = factory.createCodeSnippetStatement(codeTemplate)
-    element!!.insertBefore<CtCodeSnippetStatement>(stmt)
+    element!!.position.let {
+      handles += LoopStartHandle(it.sourceStart)
+      handles += LoopEndHandle(it.sourceEnd + 1)
+    }
   }
 }
