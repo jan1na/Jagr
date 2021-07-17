@@ -23,7 +23,7 @@ import com.google.inject.Inject
 import org.jagrkt.api.testing.Submission
 import org.jagrkt.api.testing.TestCycle
 import org.jagrkt.common.compiler.java.RuntimeClassLoader
-import org.jagrkt.common.executor.TimeoutHandler
+import jagrinternal.instrumentation.TimeoutHandler
 import org.junit.platform.commons.JUnitException
 import org.junit.platform.engine.discovery.ClassSelector
 import org.junit.platform.engine.discovery.DiscoverySelectors

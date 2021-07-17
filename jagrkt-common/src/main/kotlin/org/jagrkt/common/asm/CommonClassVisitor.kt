@@ -58,11 +58,11 @@ private class CommonMethodVisitor(
 
   private fun visitExecutionContextInsn() {
     if (!config.transformers.callStack.enabled) return
-    visitMethodInsn(Opcodes.INVOKESTATIC, "org/jagrkt/common/executor/ExecutionContextHandler", "checkExecutionContext", "()V", false)
+    visitMethodInsn(Opcodes.INVOKESTATIC, "jagrinternal/instrumentation/ExecutionContextHandler", "checkExecutionContext", "()V", false)
   }
 
   private fun visitTimeoutIsns() {
     if (!config.transformers.timeout.enabled) return
-    visitMethodInsn(Opcodes.INVOKESTATIC, "org/jagrkt/common/executor/TimeoutHandler", "checkTimeout", "()V", false)
+    visitMethodInsn(Opcodes.INVOKESTATIC, "jagrinternal/instrumentation/TimeoutHandler", "checkTimeout", "()V", false)
   }
 }

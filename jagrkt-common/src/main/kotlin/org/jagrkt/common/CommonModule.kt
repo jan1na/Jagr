@@ -20,6 +20,8 @@
 package org.jagrkt.common
 
 import com.google.inject.AbstractModule
+import jagrinternal.instrumentation.ExecutionContextHandler
+import jagrinternal.instrumentation.TimeoutHandler
 import org.jagrkt.api.executor.*
 import org.jagrkt.api.rubric.*
 import org.jagrkt.api.testing.extension.*

@@ -17,9 +17,11 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.jagrkt.common.executor;
+package jagrinternal.instrumentation;
 
 import com.google.inject.Inject;
+import org.jagrkt.common.executor.ExecutionContextFactoryImpl;
+import org.jagrkt.common.executor.StackTraceVerifier;
 
 public final class ExecutionContextHandler {
 

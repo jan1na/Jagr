@@ -19,6 +19,7 @@
 
 package org.jagrkt.common.executor
 
+import jagrinternal.instrumentation.TimeoutHandler
 import org.jagrkt.api.executor.ExecutionContext
 import org.jagrkt.api.executor.ExecutionContextVerifier
 import org.opentest4j.AssertionFailedError

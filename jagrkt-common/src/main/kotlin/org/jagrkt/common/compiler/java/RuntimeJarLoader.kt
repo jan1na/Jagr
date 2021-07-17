@@ -113,6 +113,7 @@ class RuntimeJarLoader @Inject constructor(
             it.environment.complianceLevel = 15
             it.addInputResource(VirtualFile(content))
             it.addProcessor(LoopProcessor(sourceHandles))
+            it.addProcessor(MethodProcessor(sourceHandles))
             it.buildModel()
             it.process()
           }
@@ -122,8 +123,6 @@ class RuntimeJarLoader @Inject constructor(
             sourceHandle.process(sb)
           }
           val transformedContent = sb.toString()
-          logger.info(transformedContent)
-
           val sourceFile = JavaSourceFile(className, entry.name, transformedContent)
           val instrumentedCodeFile = instrumentationDir.resolve(entry.name)
           instrumentedCodeFile.parent?.let { Files.createDirectories(it) }
