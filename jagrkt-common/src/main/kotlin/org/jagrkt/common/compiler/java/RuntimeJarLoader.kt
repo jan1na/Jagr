@@ -93,6 +93,9 @@ class RuntimeJarLoader @Inject constructor(
             logger.error("$file has invalid meta-meta.json", e)
             return CompileJarResult(file)
           }
+          testMeta?.run {
+            testMeta = copy(testClasses = testClasses.map { it.replace('\\', '/') })
+          }
         }
         entry.name == "submission-info.json" -> {
           submissionInfo = try {
