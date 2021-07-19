@@ -126,7 +126,7 @@ class RuntimeJarLoader @Inject constructor(
             sourceHandle.process(sb)
           }
           val transformedContent = sb.toString()
-          val sourceFile = JavaSourceFile(className, entry.name, transformedContent)
+          val sourceFile = JavaSourceFile(className, entry.name, content, transformedContent)
           val instrumentedCodeFile = instrumentationDir.resolve(entry.name)
           instrumentedCodeFile.parent?.let { Files.createDirectories(it) }
           Files.writeString(instrumentedCodeFile, transformedContent)
