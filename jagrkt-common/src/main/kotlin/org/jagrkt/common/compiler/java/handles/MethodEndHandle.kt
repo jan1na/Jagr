@@ -1,7 +1,11 @@
 package org.jagrkt.common.compiler.java.handles
 
-class MethodEndHandle(position: Int) : SourceHandle(position) {
+import org.jagrkt.common.Config
+
+class MethodEndHandle(override val position: Int, override val config: Config) : SourceHandle {
   override fun process(sb: StringBuilder) {
-    sb.insert(position, "}")
+    if (config.instrumentations.timeoutSourcecode.enabled || config.instrumentations.notRecursiveSourcecode.enabled) {
+      sb.insert(position, "}")
+    }
   }
 }

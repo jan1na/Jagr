@@ -1,7 +1,13 @@
 package org.jagrkt.common.compiler.java.handles
 
-class LoopStartHandle(position: Int) : SourceHandle(position) {
+import org.jagrkt.common.Config
+import org.jagrkt.common.compiler.java.handles.SourceHandleStatements.notIterativeStmt
+
+class LoopStartHandle(override val position: Int, override val config: Config) : SourceHandle {
+
   override fun process(sb: StringBuilder) {
-    sb.insert(position, "{ jagrinternal.instrumentation.LoopHandler.willEnterLoop(); ")
+    if (config.instrumentations.notIterativeSourcecode.enabled) {
+      sb.insert(position, "{ $notIterativeStmt ")
+    }
   }
 }

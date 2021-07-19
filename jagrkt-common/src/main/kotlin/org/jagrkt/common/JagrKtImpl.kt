@@ -159,7 +159,7 @@ class JagrKtImpl @Inject constructor(
         "Zero rubrics"
       )
     }
-    println("Individual timeout: ${config.transformers.timeout.individualTimeout}")
+    println("Individual timeout: ${config.timeout.individualTimeout}")
   }
 
   private fun handleSubmission(

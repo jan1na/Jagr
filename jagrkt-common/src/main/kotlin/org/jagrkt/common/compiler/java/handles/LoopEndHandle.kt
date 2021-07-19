@@ -1,7 +1,11 @@
 package org.jagrkt.common.compiler.java.handles
 
-class LoopEndHandle(position: Int) : SourceHandle(position) {
+import org.jagrkt.common.Config
+
+class LoopEndHandle(override val position: Int, override val config: Config) : SourceHandle {
   override fun process(sb: StringBuilder) {
-    sb.insert(position, "}")
+    if (config.instrumentations.notIterativeSourcecode.enabled) {
+      sb.insert(position, "}")
+    }
   }
 }

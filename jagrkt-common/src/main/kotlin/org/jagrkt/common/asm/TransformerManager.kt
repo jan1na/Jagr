@@ -52,7 +52,7 @@ class TransformerManager @Inject constructor(
 
   @Throws(BytecodeSecurityException::class)
   fun transformSubmission(result: RuntimeJarLoader.CompileJarResult): RuntimeJarLoader.CompileJarResult {
-    result.compiledClasses.read(SubmissionClassVisitor())
+    result.compiledClasses.read(SubmissionClassVisitor(config))
     return result.copy(compiledClasses = result.compiledClasses.transform { CommonClassVisitor(config, it) })
   }
 

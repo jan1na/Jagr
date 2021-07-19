@@ -23,6 +23,7 @@ import com.google.inject.Inject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.jagrkt.api.testing.CompileResult
+import org.jagrkt.common.Config
 import org.jagrkt.common.compiler.java.handles.SourceHandle
 import org.jagrkt.common.compiler.readEncoded
 import org.jagrkt.common.testing.SubmissionInfoImpl
@@ -47,6 +48,7 @@ import kotlin.collections.ArrayList
 
 class RuntimeJarLoader @Inject constructor(
   private val logger: Logger,
+  private val config: Config,
 ) {
 
   fun loadCompiledJar(file: File): Map<String, CompiledClass> {
@@ -115,8 +117,8 @@ class RuntimeJarLoader @Inject constructor(
           Launcher().let {
             it.environment.complianceLevel = 15
             it.addInputResource(VirtualFile(content))
-            it.addProcessor(LoopProcessor(sourceHandles))
-            it.addProcessor(MethodProcessor(sourceHandles))
+            it.addProcessor(LoopProcessor(sourceHandles, config))
+            it.addProcessor(MethodProcessor(sourceHandles, config))
             it.buildModel()
             it.process()
           }

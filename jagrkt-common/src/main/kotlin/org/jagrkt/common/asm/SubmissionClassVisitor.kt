@@ -19,12 +19,12 @@
 
 package org.jagrkt.common.asm
 
+import org.jagrkt.common.Config
 import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.Handle
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-class SubmissionClassVisitor : ClassVisitor(Opcodes.ASM9) {
+class SubmissionClassVisitor(private val config: Config) : ClassVisitor(Opcodes.ASM9) {
   private lateinit var className: String
   override fun visit(
     version: Int,
@@ -46,23 +46,24 @@ class SubmissionClassVisitor : ClassVisitor(Opcodes.ASM9) {
   ): MethodVisitor {
     return SubmissionMethodVisitor(className, name, descriptor)
   }
-}
 
-private class SubmissionMethodVisitor(
-  private val callerClass: String,
-  private val callerMethod: String,
-  private val callerDescriptor: String
-) : MethodVisitor(Opcodes.ASM9) {
-  override fun visitMethodInsn(opcode: Int, owner: String, name: String, descriptor: String, isInterface: Boolean) {
-    // println("Normal $owner.$name$descriptor")
-    // verify(callerClass, callerMethod, callerDescriptor, owner, name, descriptor)
+  private inner class SubmissionMethodVisitor(
+    private val callerClass: String,
+    private val callerMethod: String,
+    private val callerDescriptor: String
+  ) : MethodVisitor(Opcodes.ASM9) {
+    override fun visitMethodInsn(opcode: Int, owner: String, name: String, descriptor: String, isInterface: Boolean) {
+      // println("Normal $owner.$name$descriptor")
+      // verify(callerClass, callerMethod, callerDescriptor, owner, name, descriptor)
 
-    if (owner == "java/lang/System" && name == "exit") {
-      println("System.exit DETECTED!")
-      throw BytecodeSecurityException("System.exit DETECTED!!!!1111elf")
+      if (config.instrumentations.systemExitRemoveBytecode.enabled && owner == "java/lang/System" && name == "exit") {
+        println("System.exit DETECTED!")
+        throw BytecodeSecurityException("System.exit DETECTED!!!!1111elf")
+      }
     }
   }
 }
+
 
 private val illegal: List<String> = mutableListOf(
   "org/jagrkt", // the autograder should definitely not be referenced in submissions

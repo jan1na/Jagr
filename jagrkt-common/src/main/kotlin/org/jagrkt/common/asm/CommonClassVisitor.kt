@@ -57,12 +57,12 @@ private class CommonMethodVisitor(
   }
 
   private fun visitExecutionContextInsn() {
-    if (!config.transformers.callStack.enabled) return
+    if (!config.instrumentations.notRecursiveBytecode.enabled) return
     visitMethodInsn(Opcodes.INVOKESTATIC, "jagrinternal/instrumentation/ExecutionContextHandler", "checkExecutionContext", "()V", false)
   }
 
   private fun visitTimeoutIsns() {
-    if (!config.transformers.timeout.enabled) return
+    if (!config.instrumentations.timeoutBytecode.enabled) return
     visitMethodInsn(Opcodes.INVOKESTATIC, "jagrinternal/instrumentation/TimeoutHandler", "checkTimeout", "()V", false)
   }
 }
