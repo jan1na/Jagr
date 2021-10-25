@@ -39,7 +39,7 @@ class RubricImpl(
   }
 
   private val maxPointsKt: Int by lazy { CriterionHolderPointCalculator.maxOfChildren(0).getPoints(this) }
-  private val minPointsKt: Int by lazy { CriterionHolderPointCalculator.minOfChildren(0).getPoints(this) }
+  private val minPointsKt: Int by lazy { CriterionHolderPointCalculator.minOfChildren(0).getPoints(this).coerceAtLeast(0) }
 
   override fun getTitle(): String = title
   override fun getMaxPoints(): Int = maxPointsKt
