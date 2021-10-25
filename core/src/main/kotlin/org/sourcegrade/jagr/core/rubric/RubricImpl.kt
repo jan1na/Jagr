@@ -58,7 +58,7 @@ class RubricImpl(
       }?.also(comments::add)
       comments += messages
       GradeResult.withComments(GradeResult.of(GradeResult.ofNone(), childGraded.map(Graded::getGrade)), comments)
-    }
+    }.also { GradeResult.clamp(it, maxPointsKt, minPointsKt) }
     return GradedRubricImpl(testCycle, gradeResult, this, childGraded)
   }
 

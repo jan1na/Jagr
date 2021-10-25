@@ -44,6 +44,16 @@ class GradeResultFactoryImpl : GradeResult.Factory {
     return GradeResultImpl(correctPoints, incorrectPoints)
   }
 
+  override fun clamp(grade: GradeResult, maxPoints: Int, minPoints: Int): GradeResult {
+    val net = grade.netPoints
+    if (net > maxPoints) {
+      return GradeResultImpl(maxPoints + grade.incorrectPoints, grade.incorrectPoints)
+    } else if (net < minPoints) {
+      return GradeResultImpl(grade.correctPoints, grade.incorrectPoints - net)
+    }
+    return grade
+  }
+
   override fun ofMax(criterion: Criterion): GradeResult = ofCorrect(criterion.maxPoints - criterion.minPoints)
   override fun ofMin(criterion: Criterion): GradeResult = ofIncorrect(criterion.maxPoints - criterion.minPoints)
 

@@ -58,6 +58,10 @@ public interface GradeResult {
     return FactoryProvider.factory.of(grade, otherGrades);
   }
 
+  static GradeResult clamp(GradeResult grade, int maxPoints, int minPoints) {
+    return FactoryProvider.factory.clamp(grade, maxPoints, minPoints);
+  }
+
   static GradeResult ofMax(Criterion criterion) {
     return FactoryProvider.factory.ofMax(criterion);
   }
@@ -79,6 +83,10 @@ public interface GradeResult {
    * @return The number of points that are definitely incorrect, as determined by the automatic grader.
    */
   int getIncorrectPoints();
+
+  default int getNetPoints() {
+    return getCorrectPoints() - getIncorrectPoints();
+  }
 
   List<String> getComments();
 
@@ -106,6 +114,8 @@ public interface GradeResult {
     GradeResult of(GradeResult grade, GradeResult... otherGrades);
 
     GradeResult of(GradeResult grade, Iterable<? extends GradeResult> otherGrades);
+
+    GradeResult clamp(GradeResult grade, int maxPoints, int minPoints);
 
     GradeResult ofMax(Criterion criterion);
 
