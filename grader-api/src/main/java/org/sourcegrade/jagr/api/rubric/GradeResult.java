@@ -80,6 +80,10 @@ public interface GradeResult {
    */
   int getIncorrectPoints();
 
+  default int getNetPoints() {
+    return getCorrectPoints() - getIncorrectPoints();
+  }
+
   List<String> getComments();
 
   @ApiStatus.Internal
