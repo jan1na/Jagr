@@ -62,6 +62,11 @@ class RubricImpl(
       }?.also(comments::add)
       comments += messages
       GradeResult.withComments(GradeResult.of(GradeResult.ofNone(), childGraded.map(Graded::getGrade)), comments)
+    }.let {
+      val netPoints = it.netPoints
+      if (netPoints < 0) {
+        GradeResult.withComments(GradeResult.of(it.correctPoints, it.incorrectPoints + netPoints), it.comments)
+      } else it
     }
     return GradedRubricImpl(testCycle, gradeResult, this, childGraded)
   }
